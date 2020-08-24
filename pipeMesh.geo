@@ -1,43 +1,39 @@
 /*
-   ***** gmsh script for generating 2D/3D mesh for straight pipe *****
-   - For nomenclature, see the attached figure. 
-   - Choose either 2D(circular disc) or 3D(straight pipe) mesh in GENERAL SETTING
-   - Set the mesh parameters in SETTINGS 
-   - To generate 3D mesh: gmsh pipe3DMesh.geo -3 -order 2   
-   - To generate 2D mesh: gmsh pipe3DMesh.geo -2 -order 2   
-   -------------------------------------------------------------------
-   By Saleh Rezaeiravesh, salehr@kth.se 
-      Linne FLOW Centre, KTH Mechanics, Stockholm, Sweden
+   ***** gmsh Script for generating 2D/3D mesh for straight pipe. *****
+   ** Saleh Rezaeiravesh, salehr@kth.se
+   >>> For nomenclature, see the attached figure. 
+   >>> Set the SETTINGS
+   >>> To generate 3D mesh: gmsh pipe3DMesh.geo -3 -order 2   
+   >>> To generate 2D mesh: gmsh pipe3DMesh.geo -2 -order 2   
 */
 
 //constants
 PI=3.14159265359;
+
 ////////////////////////////////////////////////////////
 // GENERAL SETTING /////////////////////////////////////
 //***** Choose the mesh dimension
-meshDim=3;  //2 (2D mesh=circular disk), 3 (3D mesh=pipe)
+meshDim=3;  //2 (2D mesh), 3 (3D mesh)
 
 // GRID SETTINGS ///////////////////////////////////////
 //***** Geometrical parameters
-R=1.0;        //Pipe radius, Note: r<RB<R
-r=0.65;
-RB=0.94;      //Radius specifying the wall-adjacent region 
+// Note: r<RB<R
+R=1.0;   //Pipe radius
+r=0.7;
+RB=0.978343;   
+th=PI/4.;  //theta
 lambda=0.3;   //=R_{arc}/R
-Lz=10.0;      //pipe length in the z-(axial) direction
-//***** Grid paramaters
-// number of vertices/elements
-Nc=6;    // no. of vertices (=no. elements+1) in azimuthal direction
-NB=1;    // no. of elements adjacent the wall
-NM=3;    // no. of vertices (=no. elements+1) between the near-wall layer and the central square part
-Nz=20;    //no of nodes in the z-(axial) direction
-// compression ratios in the radial direction (from wall toward the center)
-compressRatio_B=0.85;  //compression ratio in the near-wall layer (<1)
-compressRatio_M=0.84;  //compression ratio in the middle layer
+Lz=8.16667;   //length in z-dir (axial)
+//***** Grid Paramaters
+Nc=19;  // no. of nodes (=#elem+1) in azimuthal direction
+NB=1;   // no. of elemtns adjacent to the wall
+NM=8;   // no. of nodes (=#elem+1) between the near wall layer and central square part
+// compression ratios over the radial lines of the mesh
+compressRatio_B=0.85;  //ratio of grid compression toward the wall (<1)
+compressRatio_M=0.87;  //compression ratio in the middle layer
+Nz=42;    //no of elements in z-dire (axial)
 ///////////////////////////////////////////////////
 
-// MESH CONSTRUCTION
-///////////////////////////////////////////////////
-th=PI/4.;  //theta
 dx=r*Cos(th);
 dy=r*Sin(th);
 dxB=RB*Cos(th);
@@ -45,30 +41,30 @@ dyB=RB*Sin(th);
 Dx=R*Cos(th);
 Dy=R*Sin(th);
 
-//***** define points and vertices
-//auxiliary points (only to define the geometry and mesh blocks)
+//***** define points coordinates
+//auxiliary points (only help define the geometry)
 Point(1) = {0, 0, 0, 1.0};
 Point(2) = {lambda*R, 0, 0, 1.0};
 Point(3) = {0, -lambda*R, 0, 1.0};
 Point(4) = {-lambda*R, 0, 0, 1.0};
 Point(5) = {0 , lambda*R, 0, 1.0};
 
-//vertices of the blocks
-Point(6)={dx,  dy, 0.0, 1.0};
+//blocks vertices
+Point(6)={dx, dy, 0.0, 1.0};
 Point(7)={dx, -dy, 0.0, 1.0};
 Point(8)={-dx,-dy, 0.0, 1.0};
 Point(9)={-dx, dy, 0.0, 1.0};
-Point(10)={dxB,  dyB, 0.0, 1.0};
+Point(10)={dxB, dyB, 0.0, 1.0};
 Point(11)={dxB, -dyB, 0.0, 1.0};
 Point(12)={-dxB,-dyB, 0.0, 1.0};
 Point(13)={-dxB, dyB, 0.0, 1.0};
-Point(14)={Dx,  Dy, 0.0, 1.0};
+Point(14)={Dx, Dy, 0.0, 1.0};
 Point(15)={Dx, -Dy, 0.0, 1.0};
 Point(16)={-Dx,-Dy, 0.0, 1.0};
 Point(17)={-Dx, Dy, 0.0, 1.0};
 
 //***** define lines and curves
-Circle(1)={9, 3, 6};   //Circle(.)={startNode, circleCenter, endNode}
+Circle(1)={9, 3, 6};   //Circle()={startNode, circleCenter, endNode}
 Circle(2)={6, 4, 7};   
 Circle(3)={7, 5, 8};   
 Circle(4)={8, 2, 9};   
@@ -89,27 +85,29 @@ Line(18)={11, 15};
 Line(19)={12, 16};
 Line(20)={13, 17};
 
-//***** assign number of divisions on the created lines/arcs
-Transfinite Line {1, 2, 3, 4} = Nc;   
+//***** assign number of mesh on the created lines/arcs
+Transfinite Line {1, 2, 3, 4} = Nc Using Bump 1.0;   
 Transfinite Line {5, 6, 7, 8} = Nc;   
 Transfinite Line {9, 10, 11, 12} = Nc;   
 Transfinite Line {13, 14, 15, 16} = NM Using Progression compressRatio_M;  
-Transfinite Line {17, 18, 19, 20} = NB Using Progression compressRatio_B;   //Note: "Progression X" means that each line element is X-time larger than the preceding one.
+Transfinite Line {17, 18, 19, 20} = NB Using Progression compressRatio_B;   //over the radial lines near the wall. Note: "For example Progression 2 meaning that each line element in the series will be twice as long as the preceding one)".
 
 //***** create surfaces
 // Note: use a negative sign if a line is swept in the opposite direction of the original definition
 Line Loop(1)={1, 2, 3 ,   4};   Plane Surface(1)={1}; //central part of the mesh
 Line Loop(2)={5, -13, -1, 16};  Plane Surface(2)={2}; 
-Line Loop(3)={13 , 6 , -14 , -2}; Plane Surface(3)={3}; 
-Line Loop(4)={-3 , 14, 7, -15};  Plane Surface(4)={4}; 
+Line Loop(3)={13, 6, -14 , -2}; Plane Surface(3)={3}; 
+Line Loop(4)={-3, 14, 7, -15};  Plane Surface(4)={4}; 
 Line Loop(5)={-16, -4, 15, 8};  Plane Surface(5)={5}; 
-Line Loop(6)={9 , -17, -5, 20};  Plane Surface(6)={6}; 
+Line Loop(6)={9, -17, -5, 20};  Plane Surface(6)={6}; 
 Line Loop(7)={17, 10, -18, -6}; Plane Surface(7)={7}; 
 Line Loop(8)={-7, 18, 11, -19}; Plane Surface(8)={8}; 
 Line Loop(9)={-8, 19, 12, -20}; Plane Surface(9)={9}; 
 
 If (meshDim==2)
+  //Line Loop (50)={9,10,11,12};
    Physical Line("wall")={9, 10, 11, 12};
+// Physical Line("wall")={50};
    Physical Surface(1)={1:9};
 EndIf
 
@@ -117,7 +115,8 @@ Recombine Surface "*";
 Transfinite Surface "*";
 
 If (meshDim==3)
-   //make a 3d mesh by extrusion in z-direction
+
+   //make a 3d mesh by extrusion in z-dir
    mesh3D[]=Extrude {0,0,Lz} 
    {
        Surface{1:9};
@@ -126,12 +125,11 @@ If (meshDim==3)
    };
 
    //Physical Surfaces & Volume (Note: gmsh only generates mesh for the physical entities)
-   // Only for Nek5000: the boundary condition tags of the surfaces are assigned in accordance with what is coded in usrdat2() routine in <case>.usr. Such code should be consistent with what is required by gmsh2nek, see:
+   // BC tag of the surfaces are assigned in accordance with what is added in usrdat2() routine in case.usr. This is in accordance with the requirements by gmsh2nek. see the following link:
    //https://github.com/yhaomin2007/Nek5000/tree/master/gmsh2nek_sourcecode/gmsh2nek/
-   // Adopted tags at the boundary faces
-   //   1: inlet
-   //   2: outlet
-   //   3: wall
+   // 1: inlet
+   // 2: outlet
+   // 3: wall
    Physical Surface("inlet") = {6, 7, 8, 9, 5, 2, 3, 4, 1};
    Physical Surface("outlet") = {152, 174, 196, 218, 64, 86, 108, 130, 42};
    Physical Surface("wall") = {139, 213, 191, 165};
