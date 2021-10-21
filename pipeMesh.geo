@@ -140,3 +140,4 @@ If (meshDim==3)
 EndIf
 
 Coherence;
+Mesh.MshFileVersion = 2.2;   //To force gmsh v2 format for ourput
